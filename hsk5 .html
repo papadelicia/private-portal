@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国商务会话学习工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ODM商谈用语学习</h1>
+            <div class="phase-selector">
+                <button class="phase-btn active" data-phase="1">初次商谈</button>
+                <button class="phase-btn" data-phase="2">工厂考察</button>
+                <button class="phase-btn" data-phase="3">规格讨论</button>
+                <button class="phase-btn" data-phase="4">样品评估</button>
+                <button class="phase-btn" data-phase="5">量产前确认</button>
+                <button class="phase-btn" data-phase="6">量产管理</button>
+            </div>
+        </header>
+        
+        <main>
+            <div id="phrase-display" class="phrase-container">
+                <!-- フレーズがここに表示される -->
+            </div>
+            
+            <div class="controls">
+                <button id="prev-btn">上一个</button>
+                <button id="next-btn">下一个</button>
+                <button id="audio-btn">播放语音</button>
+            </div>
+        </main>
+    </div>
+    
+    <script src="phrases.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
