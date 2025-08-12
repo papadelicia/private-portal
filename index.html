@@ -6,84 +6,116 @@
   <title>プライベートポータル</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg: #fff7f5;
-      --ink:#1f2937;
-      --muted:#6b7280;
-      --brand:#f59e0b;
-      --accent:#ef4444;
-      --card:#ffffff;
+      --bg:#0b1220; --bg-soft:#0f172a; --card:#111827;
+      --text:#e5e7eb; --muted:#94a3b8;
+      --brand:#f472b6;      /* ピンク系をプライベートに */
+      --brand-2:#60a5fa;    /* 補色の青 */
       --radius:16px;
-      --shadow: 0 10px 30px rgba(0,0,0,.08);
     }
-    *{box-sizing:border-box}
+    *{box-sizing:border-box} html,body{height:100%}
     body{
-      margin:0; color:var(--ink);
-      font-family: "Zen Kaku Gothic New", system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif;
+      margin:0; color:var(--text);
+      font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN","Noto Sans JP", sans-serif;
       background:
-        radial-gradient(800px 300px at 100% -20%, #ffe4e6 0%, transparent 60%),
-        radial-gradient(700px 260px at -10% -10%, #fef3c7 0%, transparent 60%),
+        radial-gradient(1200px 400px at 10% -10%, #1e293b 0%, transparent 60%),
+        radial-gradient(900px 300px at 100% 0%, #f472b620 0%, transparent 55%),
         var(--bg);
     }
-    .wrap{max-width:980px; margin:0 auto; padding:28px 18px 64px}
+    .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 64px}
     .hero{
-      background: linear-gradient(135deg, #fff 0%, #fff7ed 60%);
-      border-radius:calc(var(--radius) + 8px);
-      padding:36px 24px; box-shadow:var(--shadow);
-      border:1px solid rgba(0,0,0,.04)
+      position:relative; overflow:hidden; border-radius:calc(var(--radius) + 8px);
+      background:
+        linear-gradient(135deg, rgba(244,114,182,.22), rgba(96,165,250,.18)),
+        linear-gradient(180deg, var(--bg-soft), rgba(17,24,39,.6));
+      padding:40px 28px;
+      box-shadow:0 20px 40px rgba(0,0,0,.35), 0 0 0 1px rgba(148,163,184,.08) inset;
     }
-    .hero h1{margin:0 0 8px; font-size:clamp(28px,5vw,40px)}
-    .hero p{margin:0; color:var(--muted)}
-    .grid{
-      margin-top:22px;
-      display:grid; gap:16px;
-      grid-template-columns:repeat(auto-fit, minmax(220px,1fr));
+    .hero h1{margin:0 0 10px;font-size:clamp(28px,5vw,42px);letter-spacing:.02em}
+    .hero p{margin:0;color:var(--muted);font-size:clamp(14px,2.4vw,16px)}
+    .chips{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+    .chip{
+      font-size:12px;color:#0b1220;font-weight:700;letter-spacing:.04em;
+      background:linear-gradient(90deg,var(--brand),var(--brand-2));
+      padding:6px 10px;border-radius:999px
     }
+    .grid{display:grid;gap:16px;margin-top:22px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
     .card{
-      position:relative; overflow:hidden; border-radius:var(--radius);
-      background:var(--card); padding:18px; box-shadow:var(--shadow);
-      border:1px solid rgba(0,0,0,.05); transition: transform .25s ease, box-shadow .25s ease;
+      position:relative;overflow:hidden;border-radius:var(--radius);
+      padding:22px 18px;background:linear-gradient(180deg,#0f172a,#0b1324);
+      box-shadow:0 8px 24px rgba(0,0,0,.32),0 0 0 1px rgba(148,163,184,.08) inset;
+      transition:transform .25s ease, box-shadow .25s ease, outline-color .2s;
+      outline:2px solid transparent;
     }
-    .card:hover{ transform: translateY(-4px); box-shadow:0 16px 36px rgba(0,0,0,.12); }
-    .card h3{margin:6px 0 8px; font-size:18px}
-    .card p{margin:0; color:var(--muted); font-size:14px}
-    .pill{ display:inline-block; font-size:12px; font-weight:700; color:#fff; padding:4px 8px; border-radius:999px; background:linear-gradient(90deg, var(--brand), var(--accent));}
-    .card a{ position:absolute; inset:0; }
-    footer{margin-top:28px; color:var(--muted); font-size:12px; text-align:center}
+    .card:hover{transform:translateY(-4px);box-shadow:0 16px 36px rgba(0,0,0,.4)}
+    .card h3{margin:6px 0 8px;font-size:18px}
+    .card p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+    .card a{position:absolute;inset:0}
+    .badge{
+      display:inline-block;color:var(--brand-2);
+      font-weight:700;font-size:12px;letter-spacing:.06em;
+      border:1px solid rgba(96,165,250,.35);border-radius:999px;padding:4px 8px;
+      background:rgba(2,6,23,.6)
+    }
+    footer{margin-top:28px;color:var(--muted);font-size:12px;text-align:center}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header class="hero">
       <h1>プライベートポータル</h1>
-      <p>家族や友人と共有したいページをまとめました。</p>
+      <p>個人用の共有資料やメモへのクイックリンク。必要に応じてカードを追加してください。</p>
+      <div class="chips">
+        <span class="chip">PRIVATE</span>
+        <span class="chip">PERSONAL</span>
+        <span class="chip">UPDATED</span>
+      </div>
     </header>
 
     <main class="grid" aria-label="個人リンク">
-      <!-- ここを自分のファイル名に合わせて書き換え -->
-      
       <article class="card">
-        <span class="pill">Learning</span>
-        <h3>HSK5（中国語）</h3>
-        <p>単語・フレーズ練習ページ。</p>
-        <a href="hsk5.html" aria-label="HSK5へ"></a>
+        <span class="badge">TRAVEL</span>
+        <h3>旅行記</h3>
+        <p>行程・費用メモ、フォトログへの入口。</p>
+        <a href="travel.html" aria-label="旅行記へ"></a>
       </article>
 
       <article class="card">
-        <span class="pill">snack</span>
-        <h3>ライブハウスひろりん</h3>
-        <p>お店紹介</p>
-        <a href="hirorin.html" aria-label="HSK5へ"></a>
+        <span class="badge">RECIPE</span>
+        <h3>お気に入りレシピ</h3>
+        <p>作り置き・家族の定番・手順メモ。</p>
+        <a href="recipe.html" aria-label="レシピへ"></a>
       </article>
+
+      <article class="card">
+        <span class="badge">PHOTOS</span>
+        <h3>写真アルバム</h3>
+        <p>イベント別アルバム／サムネイル一覧。</p>
+        <a href="photo-album.html" aria-label="写真アルバムへ"></a>
+      </article>
+
+      <article class="card">
+        <span class="badge">LANGUAGE</span>
+        <h3>HSK5（中国語）</h3>
+        <p>語彙・例文・クイズなど学習用ページ。</p>
+        <a href="hsk5.html" aria-label="HSK5へ"></a>
+      </article>
+
+      <!-- 追加したいときは下の雛形をコピペしてリンク先を差し替え -->
+      <!--
+      <article class="card">
+        <span class="badge">TAG</span>
+        <h3>タイトル</h3>
+        <p>説明テキスト。</p>
+        <a href="your-file.html" aria-label="タイトルへ"></a>
+      </article>
+      -->
     </main>
 
     <footer>© Private portal</footer>
   </div>
 </body>
 </html>
-
-
-
 
