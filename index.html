@@ -1,21 +1,98 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>プライベートポータル</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #fff7f5;
+      --ink:#1f2937;
+      --muted:#6b7280;
+      --brand:#f59e0b;
+      --accent:#ef4444;
+      --card:#ffffff;
+      --radius:16px;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; color:var(--ink);
+      font-family: "Zen Kaku Gothic New", system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans JP", sans-serif;
+      background:
+        radial-gradient(800px 300px at 100% -20%, #ffe4e6 0%, transparent 60%),
+        radial-gradient(700px 260px at -10% -10%, #fef3c7 0%, transparent 60%),
+        var(--bg);
+    }
+    .wrap{max-width:980px; margin:0 auto; padding:28px 18px 64px}
+    .hero{
+      background: linear-gradient(135deg, #fff 0%, #fff7ed 60%);
+      border-radius:calc(var(--radius) + 8px);
+      padding:36px 24px; box-shadow:var(--shadow);
+      border:1px solid rgba(0,0,0,.04)
+    }
+    .hero h1{margin:0 0 8px; font-size:clamp(28px,5vw,40px)}
+    .hero p{margin:0; color:var(--muted)}
+    .grid{
+      margin-top:22px;
+      display:grid; gap:16px;
+      grid-template-columns:repeat(auto-fit, minmax(220px,1fr));
+    }
+    .card{
+      position:relative; overflow:hidden; border-radius:var(--radius);
+      background:var(--card); padding:18px; box-shadow:var(--shadow);
+      border:1px solid rgba(0,0,0,.05); transition: transform .25s ease, box-shadow .25s ease;
+    }
+    .card:hover{ transform: translateY(-4px); box-shadow:0 16px 36px rgba(0,0,0,.12); }
+    .card h3{margin:6px 0 8px; font-size:18px}
+    .card p{margin:0; color:var(--muted); font-size:14px}
+    .pill{ display:inline-block; font-size:12px; font-weight:700; color:#fff; padding:4px 8px; border-radius:999px; background:linear-gradient(90deg, var(--brand), var(--accent));}
+    .card a{ position:absolute; inset:0; }
+    footer{margin-top:28px; color:var(--muted); font-size:12px; text-align:center}
+  </style>
 </head>
 <body>
-  <h1>プライベートポータル</h1>
-  <p>このページはプライベートで作成した共有資料への入口です。</p>
-  <ul>
-    <li><a href="travel.html">旅行記</a></li>
-    <li><a href="recipe.html">お気に入りレシピ</a></li>
-    <li><a href="photo-album.html">写真アルバム</a></li>
-    <li><a href="hsk5.html">HSK5（中国語）</a></li>
-    <li><a href="hirorin.html">ライブスナック</a></li>
-  </ul>
-  <p>必要に応じて上記リストに新しい資料へのリンクを追加してください。</p>
+  <div class="wrap">
+    <header class="hero">
+      <h1>プライベートポータル</h1>
+      <p>家族や友人と共有したいページをまとめました。</p>
+    </header>
+
+    <main class="grid" aria-label="個人リンク">
+      <!-- ここを自分のファイル名に合わせて書き換え -->
+      <article class="card">
+        <span class="pill">TRAVEL</span>
+        <h3>旅行記</h3>
+        <p>行った場所の写真と記録。</p>
+        <a href="travel.html" aria-label="旅行記へ"></a>
+      </article>
+
+      <article class="card">
+        <span class="pill">FOOD</span>
+        <h3>お気に入りレシピ</h3>
+        <p>作り置き・鍋・お菓子など。</p>
+        <a href="recipe.html" aria-label="レシピへ"></a>
+      </article>
+
+      <article class="card">
+        <span class="pill">PHOTO</span>
+        <h3>写真アルバム</h3>
+        <p>最近のイベント写真。</p>
+        <a href="photo-album.html" aria-label="写真アルバムへ"></a>
+      </article>
+
+      <article class="card">
+        <span class="pill">LANG</span>
+        <h3>HSK5（中国語）</h3>
+        <p>単語・フレーズ練習ページ。</p>
+        <a href="hsk5.html" aria-label="HSK5へ"></a>
+      </article>
+    </main>
+
+    <footer>© Private portal</footer>
+  </div>
 </body>
 </html>
-
-
