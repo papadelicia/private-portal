@@ -79,111 +79,188 @@ h1{margin:0 0 8px;font-size:24px}
 </div>
 
 <script>
-// ====== 状態管理 ======
-let words = [];
-let state = JSON.parse(localStorage.getItem('quizState')||'{"total":0,"correct":0,"wrongKeys":{}}');
-let session = {idx:0,list:[],wrongOnly:false};
-let current=null;
+// ====== 初期状態・要素参照 ======
+const SEED = [ {hanzi:"调查",pinyin:"diàochá"}, {hanzi:"基础",pinyin:"jīchǔ"},
+               {hanzi:"考虑",pinyin:"kǎolǜ"}, {hanzi:"工资",pinyin:"gōngzī"} ];
+let WORDS = SEED;
+const elStart = document.getElementById('btnStart');
+const elWrong = document.getElementById('btnWrongOnly');
+const elReset = document.getElementById('btnReset');
+const elSay   = document.getElementById('btnSay');
+const elNext  = document.getElementById('btnNext');
+const elChoices = document.getElementById('choices');
+const elHanzi   = document.getElementById('qxHanzi');
+const elNum     = document.getElementById('qxNum');
+const elStatus  = document.getElementById('qxStatus');
+const elRate    = document.querySelector('#statRate');
+const elTotal   = document.querySelector('#statTotal');
 
-// 要素取得
-const elStart=document.getElementById('btnStart');
-const elWrong=document.getElementById('btnWrongOnly');
-const elReset=document.getElementById('btnReset');
-const elSay=document.getElementById('btnSay');
-const elNext=document.getElementById('btnNext');
-const elChoices=document.getElementById('choices');
-const elHanzi=document.getElementById('qxHanzi');
-const elNum=document.getElementById('qxNum');
-const elStatus=document.getElementById('qxStatus');
-const elRate=document.getElementById('statRate');
-const elTotal=document.getElementById('statTotal');
+// 起動時は開始ボタンを一旦無効化（JSON読込完了で有効化）
+elStart.disabled = true; elStart.textContent = 'データ読込中…';
 
-function saveState(s){ localStorage.setItem('quizState',JSON.stringify(s)); }
-function updateStatsUI(){
-  elRate.textContent=`正答率 ${state.total?Math.round(state.correct/state.total*100):0}%`;
-  elTotal.textContent=`総計 ${state.total}/${state.total}`;
-}
-
-// ====== JSONロード ======
-fetch('hsk4.json?nocache='+Date.now())
-.then(r=>r.json())
-.then(data=>{
-  words=data;
-  console.log("Loaded", words.length);
-})
-.catch(e=>{
-  console.error("JSON読み込みエラー", e);
-});
-
-// ====== 出題 ======
-function buildPool(){
-  let pool=words.slice();
-  if(session.wrongOnly){
-    pool=pool.filter(w=>state.wrongKeys[w.hanzi]);
+// ====== JSON自動読込（GitHub Pages対応・キャッシュ回避） ======
+(async function loadJson(){
+  try{
+    const base = new URL('.', location.href);
+    const url  = new URL('hsk4.json', base);
+    url.searchParams.set('v', Date.now()); // キャッシュ回避
+    const r = await fetch(url.toString(), {cache:'no-store'});
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    if (Array.isArray(data) && data.length) WORDS = data;
+  }catch(e){
+    console.warn('hsk4.json 読込失敗。SEEDで起動します:', e);
+  }finally{
+    elStart.disabled = false;
+    elStart.textContent = 'クイズ開始（10問）';
   }
-  pool=shuffle(pool).slice(0,10);
-  return pool.map(w=>{
-    let options=[w.pinyin];
-    while(options.length<4){
-      let c=words[Math.floor(Math.random()*words.length)].pinyin;
-      if(!options.includes(c)) options.push(c);
-    }
-    options=shuffle(options);
-    return {word:w,options,correctIndex:options.indexOf(w.pinyin)};
-  });
+})();
+
+// ====== ピンイン（声調）ユーティリティ ======
+const toneMap = {
+  a:['a','ā','á','ǎ','à'], e:['e','ē','é','ě','è'], i:['i','ī','í','ǐ','ì'],
+  o:['o','ō','ó','ǒ','ò'], u:['u','ū','ú','ǔ','ù'], 'ü':['ü','ǖ','ǘ','ǚ','ǜ']
+};
+const toneIndexOfChar = (ch) => {
+  for (const [k,arr] of Object.entries(toneMap)) {
+    const idx = arr.indexOf(ch);
+    if (idx > -1) return {base:k, tone:idx}; // 0..4（0=無声調）
+  } return null;
+};
+function splitSyl(py){ return py.trim().split(/\s+/); }
+function toneTargetIndex(s){ // 優先規則: a > e > o > i/u/ü
+  for (let i=0;i<s.length;i++){ if (toneIndexOfChar(s[i])) return i; }
+  for (const v of ['a','e','o','i','u','ü']){ const k=s.indexOf(v); if (k>-1) return k; }
+  return -1;
 }
-function shuffle(a){return a.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);}
+function setTone(syl, newTone){ // newTone: 1..4
+  const i = toneTargetIndex(syl); if (i<0) return syl;
+  const info = toneIndexOfChar(syl[i]) || {base:syl[i], tone:0};
+  const base = info.base; const marked = toneMap[base]?.[newTone] || base;
+  return syl.slice(0,i) + marked + syl.slice(i+1);
+}
+function detectTone(syl){ for (const ch of syl){ const t=toneIndexOfChar(ch); if (t) return t.tone; } return 0; }
+function shuffle(a){ return a.map(x=>[Math.random(),x]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]); }
+
+// —— 正解ピンインから「声調違いのダミー」を生成（必ず4択） ——
+function genToneOptions(correct){
+  const syls = splitSyl(correct);
+  const opts = new Set([correct]);
+  let guard = 0;
+  while (opts.size < 4 && guard < 80){
+    guard++;
+    // ランダムな音節の声調だけ変える
+    const idx = Math.floor(Math.random()*syls.length);
+    const s = syls[idx];
+    const t = detectTone(s) || 1;
+    let newTone = t;
+    for (let k=0;k<5 && newTone===t;k++) newTone = 1 + Math.floor(Math.random()*4);
+    const cand = syls.map((sy, i)=> i===idx ? setTone(s, newTone) : sy).join(' ');
+    opts.add(cand);
+  }
+  // まだ不足する場合は、別音節も変えて埋める
+  while (opts.size < 4){
+    const idx = (opts.size % syls.length);
+    const cand = syls.map((sy,i)=> i===idx ? setTone(sy, 1 + (i%4)) : sy).join(' ');
+    opts.add(cand);
+  }
+  return shuffle([...opts]);
+}
+
+// ====== 進捗（localStorage） ======
+const LS = 'hsk4_pinyin_quiz_v1';
+let state = (()=>{ try{ return JSON.parse(localStorage.getItem(LS)) || {total:0,correct:0,wrongKeys:{}} }catch(_){ return {total:0,correct:0,wrongKeys:{}} }})();
+function saveState(){ localStorage.setItem(LS, JSON.stringify(state)); }
+function updateStats(){ const acc = state.total? Math.round(100*state.correct/state.total):0;
+  elRate.textContent = `正答率 ${acc}%`; elTotal.textContent = `総計 ${state.correct}/${state.total}`; }
+
+// ====== 出題制御 ======
+let session = { size:10, idx:0, list:[], wrongOnly:false };
+let current = null;
+
+function buildPool(){
+  const base = WORDS.slice();
+  let pool = session.wrongOnly ? base.filter(w => state.wrongKeys[w.hanzi]) : base;
+  if (!pool.length){ // 間違いが無ければ通常出題に戻す
+    session.wrongOnly = false;
+    elWrong.textContent = '復習モード：OFF';
+    pool = base;
+  }
+  return shuffle(pool).slice(0, session.size);
+}
 function renderQuestion(){
-  if(session.idx>=session.list.length){elHanzi.textContent="終了！";elChoices.innerHTML="";elNext.disabled=true;return;}
-  current=session.list[session.idx];
-  elNum.textContent=`問題 ${session.idx+1} / ${session.list.length}`;
-  elHanzi.textContent=current.word.hanzi;
-  elChoices.innerHTML='';
-  current.options.forEach((opt,i)=>{
-    const btn=document.createElement('button');
-    btn.className='choice';
-    btn.textContent=`${'ABCD'[i]}. ${opt}`;
-    btn.addEventListener('click',()=>onAnswer(i,btn));
-    elChoices.appendChild(btn);
+  if (session.idx >= session.list.length){
+    elNum.textContent = '終了';
+    elHanzi.textContent = 'おつかれさま！';
+    elChoices.innerHTML = ''; elStatus.textContent = ''; elNext.disabled = true; return;
+  }
+  const word = session.list[session.idx];
+  const options = genToneOptions(word.pinyin);
+  const correctIndex = options.indexOf(word.pinyin);
+  current = {word, options, correctIndex};
+
+  elNum.textContent = `問題 ${session.idx+1} / ${session.list.length}`;
+  elHanzi.textContent = word.hanzi;
+  elChoices.innerHTML = ''; elStatus.textContent = ''; elNext.disabled = true;
+
+  options.forEach((opt,i)=>{
+    const b = document.createElement('button');
+    b.className = 'choice'; b.textContent = `${'ABCD'[i]}. ${opt}`;
+    b.addEventListener('click', ()=> onAnswer(i));
+    elChoices.appendChild(b);
   });
-  elStatus.textContent='';
-  elNext.disabled=true;
 }
-function onAnswer(i,btn){
-  if(!current) return;
-  const ok=(i===current.correctIndex);
-  state.total+=1;
-  if(ok) state.correct+=1;
-  saveState(state);
-  updateStatsUI();
+function onAnswer(i){
+  if (!current) return;
+  const ok = (i === current.correctIndex);
+  state.total += 1; if (ok) state.correct += 1; else state.wrongKeys[current.word.hanzi]=(state.wrongKeys[current.word.hanzi]||0)+1;
+  if (ok && state.wrongKeys[current.word.hanzi]){ state.wrongKeys[current.word.hanzi]-=1; if (state.wrongKeys[current.word.hanzi]<=0) delete state.wrongKeys[current.word.hanzi]; }
+  saveState(); updateStats();
+
   [...elChoices.children].forEach((b,idx)=>{
-    b.disabled=true;
-    if(idx===current.correctIndex) b.classList.add('correct');
-    if(!ok&&idx===i) b.classList.add('wrong');
+    b.disabled = true;
+    if (idx === current.correctIndex) b.classList.add('correct');
+    if (!ok && idx === i) b.classList.add('wrong');
   });
-  if(!ok){ state.wrongKeys[current.word.hanzi]=(state.wrongKeys[current.word.hanzi]||0)+1; saveState(state);}
-  else { if(state.wrongKeys[current.word.hanzi]){ state.wrongKeys[current.word.hanzi]-=1;if(state.wrongKeys[current.word.hanzi]<=0) delete state.wrongKeys[current.word.hanzi]; saveState(state);} }
+
   elStatus.classList.remove('ok','ng');
-  if(ok){elStatus.textContent=`正解！ ${current.word.pinyin}`;elStatus.classList.add('ok');}
-  else {elStatus.textContent=`不正解… 正解は ${current.word.pinyin}`;elStatus.classList.add('ng');}
-  elNext.disabled=false;
+  if (ok){ elStatus.textContent = `正解！ ${current.word.pinyin}`; elStatus.classList.add('ok'); }
+  else   { elStatus.textContent = `不正解… 正解は ${current.word.pinyin}`; elStatus.classList.add('ng'); }
+  speak(current.word.hanzi);
+  elNext.disabled = false;
+}
+
+// ====== 音声（Web Speech API） ======
+function speak(text){
+  if (!('speechSynthesis' in window)) return; // 非対応ブラウザ
+  try{
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN'; u.rate = 1.0; u.pitch = 1.0;
+    // 可能なら中国語ボイスを選択
+    const voices = speechSynthesis.getVoices();
+    const zh = voices.find(v=>/zh|Chinese/i.test(v.lang||v.name||'')); if (zh) u.voice = zh;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch(_){}
 }
 
 // ====== ハンドラ ======
-function startQuiz(){session.idx=0;session.list=buildPool();renderQuestion();}
-function nextQuestion(){if(session.idx<session.list.length-1){session.idx++;renderQuestion();}else{session.idx++;renderQuestion();}}
-function toggleWrong(){session.wrongOnly=!session.wrongOnly;elWrong.textContent=`復習モード：${session.wrongOnly?'ON':'OFF'}`;startQuiz();}
-function resetAll(){if(!confirm('全ての進捗を削除します。よろしいですか？'))return;state={total:0,correct:0,wrongKeys:{}};saveState(state);updateStatsUI();startQuiz();}
+function startQuiz(){ session.idx=0; session.list = buildPool(); renderQuestion(); }
+function nextQ(){ if (session.idx < session.list.length-1){ session.idx++; renderQuestion(); } else { session.idx++; renderQuestion(); } }
+function toggleWrong(){ session.wrongOnly = !session.wrongOnly; elWrong.textContent = `復習モード：${session.wrongOnly?'ON':'OFF'}`; startQuiz(); }
+function resetAll(){ if(!confirm('全ての進捗（正解数/不正解履歴）を削除します。よろしいですか？')) return;
+  state = {total:0,correct:0,wrongKeys:{}}; saveState(); updateStats(); startQuiz(); }
 
-elStart.addEventListener('click',startQuiz);
-elNext.addEventListener('click',nextQuestion);
-elWrong.addEventListener('click',toggleWrong);
-elReset.addEventListener('click',resetAll);
-elSay.addEventListener('click',()=>{if(current) alert(current.word.hanzi);}); // 仮音声
+elStart.addEventListener('click', startQuiz);
+elNext .addEventListener('click', nextQ);
+elWrong.addEventListener('click', toggleWrong);
+elReset.addEventListener('click', resetAll);
+elSay  .addEventListener('click', ()=>{ if(current) speak(current.word.hanzi); });
 
-window.addEventListener('keydown',e=>{if(e.key==='Enter'&&!elNext.disabled) nextQuestion();});
+// Enterキーで次へ
+window.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !elNext.disabled) nextQ(); });
 
-updateStatsUI();
+// 初期表示
+updateStats();
 </script>
 </body>
 </html>
